@@ -61,6 +61,7 @@ import static io.trino.spi.type.DoubleType.DOUBLE;
 import static io.trino.spi.type.IntegerType.INTEGER;
 import static io.trino.spi.type.RealType.REAL;
 import static io.trino.spi.type.SmallintType.SMALLINT;
+import static io.trino.spi.type.TimeType.TIME_SECONDS;
 import static io.trino.spi.type.TimeZoneKey.UTC_KEY;
 import static io.trino.spi.type.TimeZoneKey.getTimeZoneKey;
 import static io.trino.spi.type.TimestampType.createTimestampType;
@@ -580,6 +581,50 @@ public class TestMemSqlTypeMapping
                 .addRoundTrip(dateDataType, dateOfLocalTimeChangeForwardAtMidnightInJvmZone)
                 .addRoundTrip(dateDataType, dateOfLocalTimeChangeForwardAtMidnightInSomeZone)
                 .addRoundTrip(dateDataType, dateOfLocalTimeChangeBackwardAtMidnightInSomeZone);
+    }
+
+    @Test(dataProvider = "sessionZonesDataProvider")
+    public void testTime(ZoneId sessionZone)
+    {
+        Session session = Session.builder(getSession())
+                .setTimeZoneKey(getTimeZoneKey(sessionZone.getId()))
+                .build();
+
+        SqlDataTypeTest.create()
+                .addRoundTrip("time(0)", "NULL", TIME_SECONDS, "CAST(NULL AS time(0))")
+                .addRoundTrip("time(0)", "TIME '00:00:00'", TIME_SECONDS, "TIME '00:00:00'")
+                .addRoundTrip("time(0)", "TIME '01:02:03'", TIME_SECONDS, "TIME '01:02:03'")
+                .addRoundTrip("time(0)", "TIME '23:59:59'", TIME_SECONDS, "TIME '23:59:59'")
+                .execute(getQueryRunner(), session, trinoCreateAsSelect("tpch.test_time"))
+                .execute(getQueryRunner(), session, trinoCreateAndInsert(getSession(), "tpch.test_time"));
+
+        SqlDataTypeTest.create()
+                .addRoundTrip("time", "NULL", TIME_SECONDS, "CAST(NULL AS time(0))")
+                .addRoundTrip("time", "'00:00:00'", TIME_SECONDS, "TIME '00:00:00'")
+                .addRoundTrip("time", "'01:02:03'", TIME_SECONDS, "TIME '01:02:03'")
+                .addRoundTrip("time", "'23:59:59'", TIME_SECONDS, "TIME '23:59:59'")
+                .execute(getQueryRunner(), session, memSqlCreateAndInsert("tpch.test_time"));
+    }
+
+    @Test(dataProvider = "unsupportedTimeDataProvider")
+    public void testUnsupportedTime(String unsupportedTime)
+    {
+        try (TestTable table = new TestTable(memSqlServer::execute, "tpch.test_unsupported_time", "(col time)", ImmutableList.of(format("'%s'", unsupportedTime)))) {
+            assertQueryFails(
+                    "SELECT * FROM " + table.getName(),
+                    format("\\Q%s cannot be parse as LocalTime (format is \"HH:mm:ss[.S]\" for data type \"TIME\")", unsupportedTime));
+        }
+    }
+
+    @DataProvider
+    public Object[][] unsupportedTimeDataProvider()
+    {
+        return new Object[][] {
+                {"-838:59:59"}, // min value in MemSQL
+                {"-00:00:01"},
+                {"24:00:00"},
+                {"838:59:59"}, // max value in MemSQL
+        };
     }
 
     @Test(dataProvider = "sessionZonesDataProvider")
