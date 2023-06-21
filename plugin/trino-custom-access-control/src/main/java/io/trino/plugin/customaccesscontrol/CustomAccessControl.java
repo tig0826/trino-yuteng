@@ -39,6 +39,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,6 @@ import java.util.Set;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.ALL;
-import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.NONE;
 import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.OWNER;
 import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.READ_ONLY;
 import static io.trino.plugin.base.security.TableAccessControlRule.TablePrivilege.DELETE;
@@ -114,7 +114,7 @@ public class CustomAccessControl
 {
     public static final String NAME = "custom-access-control";
     private static final CustomAccessControl INSTANCE = new CustomAccessControl();
-    private static final String OPA_SERVER_URL = "http://192.168.31.137:8000/check_access";
+    private static final String OPA_SERVER_URL = "http://localhost:8000/check_access";
     private static final Logger log = Logger.get(CustomAccessControl.class);
 
     public static class Factory
@@ -131,6 +131,11 @@ public class CustomAccessControl
         {
             return INSTANCE;
         }
+    }
+
+    @Override
+    public void checkCanSetUser(Optional<Principal> principal, String userName)
+    {
     }
 
     @Override
@@ -218,11 +223,27 @@ public class CustomAccessControl
     {
         ImmutableSet.Builder<String> filteredCatalogs = ImmutableSet.builder();
         for (String catalog : catalogs) {
-            if (canAccessCatalog(context.getIdentity(), catalog, NONE)) {
+            if (checkCatalogByUserPrefix(context.getIdentity(), catalog)) {
                 filteredCatalogs.add(catalog);
             }
         }
         return filteredCatalogs.build();
+    }
+
+    public Boolean checkCatalogByUserPrefix(Identity identity, String catalogName)
+    {
+//        Format: userId = dataplantId_userId , catalogName = db_dataplantId_catalogName
+        String user = identity.getUser();
+//        If user is admin, return true, if not, check if user is in the same dataplantId
+        if ("admin".equals(user)) {
+            return true;
+        }
+//        Avoid the case catalogName is not in the format of db_dataplantId_catalogName like catalog1
+//        Avoid user is not in the format of dataplantId_userId like user1
+        if (!catalogName.contains("_") || !user.contains("_")) {
+            return false;
+        }
+        return catalogName.split("_")[1].equals(user.split("_")[0]);
     }
 
     @Override
