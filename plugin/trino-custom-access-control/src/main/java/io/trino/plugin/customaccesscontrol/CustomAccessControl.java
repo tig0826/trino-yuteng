@@ -14,6 +14,7 @@
 package io.trino.plugin.customaccesscontrol;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.log.Logger;
 import io.trino.plugin.base.security.CatalogAccessControlRule;
@@ -46,9 +47,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.ALL;
-import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.OWNER;
 import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.READ_ONLY;
 import static io.trino.plugin.base.security.TableAccessControlRule.TablePrivilege.DELETE;
 import static io.trino.plugin.base.security.TableAccessControlRule.TablePrivilege.GRANT_SELECT;
@@ -106,8 +105,8 @@ import static io.trino.spi.security.AccessDeniedException.denyShowSchemas;
 import static io.trino.spi.security.AccessDeniedException.denyShowTables;
 import static io.trino.spi.security.AccessDeniedException.denyTruncateTable;
 import static io.trino.spi.security.AccessDeniedException.denyUpdateTableColumns;
+import static io.trino.spi.security.AccessDeniedException.denyWriteSystemInformationAccess;
 import static java.lang.String.format;
-import static java.util.Collections.emptySet;
 
 public class CustomAccessControl
         implements SystemAccessControl
@@ -179,10 +178,7 @@ public class CustomAccessControl
     @Override
     public void checkCanWriteSystemInformation(SystemSecurityContext context)
     {
-//        TODO: Let it go
-//        if (!canSystemInformation(context.getIdentity(), SystemInformationRule.AccessMode.WRITE)) {
-//            denyWriteSystemInformationAccess();
-//        }
+        denyWriteSystemInformationAccess();
     }
 
     @Override
@@ -197,7 +193,7 @@ public class CustomAccessControl
     @Override
     public void checkCanAccessCatalog(SystemSecurityContext context, String catalogName)
     {
-        if (!canAccessCatalog(context.getIdentity(), catalogName, READ_ONLY)) {
+        if (!checkCatalogByUserPrefix(context.getIdentity(), catalogName)) {
             denyCatalogAccess(catalogName);
         }
     }
@@ -205,7 +201,7 @@ public class CustomAccessControl
     @Override
     public void checkCanCreateCatalog(SystemSecurityContext context, String catalogName)
     {
-        if (!canAccessCatalog(context.getIdentity(), catalogName, OWNER)) {
+        if (!checkCatalogByUserPrefix(context.getIdentity(), catalogName)) {
             denyCreateCatalog(catalogName);
         }
     }
@@ -213,7 +209,7 @@ public class CustomAccessControl
     @Override
     public void checkCanDropCatalog(SystemSecurityContext context, String catalogName)
     {
-        if (!canAccessCatalog(context.getIdentity(), catalogName, OWNER)) {
+        if (!checkCatalogByUserPrefix(context.getIdentity(), catalogName)) {
             denyDropCatalog(catalogName);
         }
     }
@@ -290,9 +286,7 @@ public class CustomAccessControl
     @Override
     public Set<String> filterSchemas(SystemSecurityContext context, String catalogName, Set<String> schemaNames)
     {
-        return schemaNames.stream()
-                .filter(schemaName -> canAccessSchema(context.getIdentity(), catalogName, schemaName, READ_ONLY))
-                .collect(toImmutableSet());
+        return schemaNames;
     }
 
     @Override
@@ -379,12 +373,7 @@ public class CustomAccessControl
     @Override
     public Set<SchemaTableName> filterTables(SystemSecurityContext context, String catalogName, Set<SchemaTableName> tableNames)
     {
-//        TODO: !!!!
-        return emptySet();
-//        return tableNames.stream()
-//                .filter(tableName -> isSchemaOwner(context, new CatalogSchemaName(catalogName, tableName.getSchemaName())) ||
-//                        checkAnyTablePermission(context, new CatalogSchemaTableName(catalogName, tableName)))
-//                .collect(toImmutableSet());
+        return tableNames;
     }
 
     @Override
@@ -398,8 +387,7 @@ public class CustomAccessControl
     @Override
     public Set<String> filterColumns(SystemSecurityContext context, CatalogSchemaTableName table, Set<String> columns)
     {
-//        TODO: Can't override
-        return emptySet();
+        return columns;
     }
 
     @Override
@@ -705,20 +693,13 @@ public class CustomAccessControl
     @Override
     public List<ViewExpression> getRowFilters(SystemSecurityContext context, CatalogSchemaTableName tableName)
     {
-//        TODO: Check or not ?
-        return List.of();
+        return ImmutableList.of();
     }
 
     @Override
     public Optional<ViewExpression> getColumnMask(SystemSecurityContext context, CatalogSchemaTableName tableName, String columnName, Type type)
     {
-//        TODO: Check or not ?
-        List<ViewExpression> masks = getColumnMasks(context, tableName, columnName, type);
-        if (masks.size() > 1) {
-            throw new UnsupportedOperationException("Multiple masks on a single column are no longer supported");
-        }
-
-        return masks.stream().findFirst();
+        return Optional.empty();
     }
 
     private boolean canAccessCatalog(Identity identity, String catalogName, CatalogAccessControlRule.AccessMode accessMode)
