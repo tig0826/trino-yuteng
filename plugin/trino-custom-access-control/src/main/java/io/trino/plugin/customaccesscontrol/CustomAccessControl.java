@@ -64,45 +64,36 @@ import static io.trino.spi.security.AccessDeniedException.denyCommentView;
 import static io.trino.spi.security.AccessDeniedException.denyCreateCatalog;
 import static io.trino.spi.security.AccessDeniedException.denyCreateMaterializedView;
 import static io.trino.spi.security.AccessDeniedException.denyCreateRole;
-import static io.trino.spi.security.AccessDeniedException.denyCreateSchema;
 import static io.trino.spi.security.AccessDeniedException.denyCreateTable;
 import static io.trino.spi.security.AccessDeniedException.denyCreateView;
 import static io.trino.spi.security.AccessDeniedException.denyCreateViewWithSelect;
 import static io.trino.spi.security.AccessDeniedException.denyDeleteTable;
-import static io.trino.spi.security.AccessDeniedException.denyDenySchemaPrivilege;
 import static io.trino.spi.security.AccessDeniedException.denyDenyTablePrivilege;
 import static io.trino.spi.security.AccessDeniedException.denyDropCatalog;
 import static io.trino.spi.security.AccessDeniedException.denyDropColumn;
 import static io.trino.spi.security.AccessDeniedException.denyDropMaterializedView;
 import static io.trino.spi.security.AccessDeniedException.denyDropRole;
-import static io.trino.spi.security.AccessDeniedException.denyDropSchema;
 import static io.trino.spi.security.AccessDeniedException.denyDropTable;
 import static io.trino.spi.security.AccessDeniedException.denyDropView;
 import static io.trino.spi.security.AccessDeniedException.denyExecuteFunction;
 import static io.trino.spi.security.AccessDeniedException.denyGrantRoles;
-import static io.trino.spi.security.AccessDeniedException.denyGrantSchemaPrivilege;
 import static io.trino.spi.security.AccessDeniedException.denyGrantTablePrivilege;
 import static io.trino.spi.security.AccessDeniedException.denyInsertTable;
 import static io.trino.spi.security.AccessDeniedException.denyRefreshMaterializedView;
 import static io.trino.spi.security.AccessDeniedException.denyRenameColumn;
 import static io.trino.spi.security.AccessDeniedException.denyRenameMaterializedView;
-import static io.trino.spi.security.AccessDeniedException.denyRenameSchema;
 import static io.trino.spi.security.AccessDeniedException.denyRenameTable;
 import static io.trino.spi.security.AccessDeniedException.denyRenameView;
 import static io.trino.spi.security.AccessDeniedException.denyRevokeRoles;
-import static io.trino.spi.security.AccessDeniedException.denyRevokeSchemaPrivilege;
 import static io.trino.spi.security.AccessDeniedException.denyRevokeTablePrivilege;
 import static io.trino.spi.security.AccessDeniedException.denySelectColumns;
 import static io.trino.spi.security.AccessDeniedException.denySetMaterializedViewProperties;
-import static io.trino.spi.security.AccessDeniedException.denySetSchemaAuthorization;
 import static io.trino.spi.security.AccessDeniedException.denySetTableAuthorization;
 import static io.trino.spi.security.AccessDeniedException.denySetTableProperties;
 import static io.trino.spi.security.AccessDeniedException.denySetViewAuthorization;
 import static io.trino.spi.security.AccessDeniedException.denyShowColumns;
-import static io.trino.spi.security.AccessDeniedException.denyShowCreateSchema;
 import static io.trino.spi.security.AccessDeniedException.denyShowCreateTable;
 import static io.trino.spi.security.AccessDeniedException.denyShowSchemas;
-import static io.trino.spi.security.AccessDeniedException.denyShowTables;
 import static io.trino.spi.security.AccessDeniedException.denyTruncateTable;
 import static io.trino.spi.security.AccessDeniedException.denyUpdateTableColumns;
 import static io.trino.spi.security.AccessDeniedException.denyWriteSystemInformationAccess;
@@ -245,34 +236,21 @@ public class CustomAccessControl
     @Override
     public void checkCanCreateSchema(SystemSecurityContext context, CatalogSchemaName schema, Map<String, Object> properties)
     {
-        if (!canAccessSchema(context.getIdentity(), schema.getCatalogName(), schema.getSchemaName(), ALL)) {
-            denyCreateSchema(schema.toString());
-        }
     }
 
     @Override
     public void checkCanDropSchema(SystemSecurityContext context, CatalogSchemaName schema)
     {
-        if (!canAccessSchema(context.getIdentity(), schema.getCatalogName(), schema.getSchemaName(), ALL)) {
-            denyDropSchema(schema.toString());
-        }
     }
 
     @Override
     public void checkCanRenameSchema(SystemSecurityContext context, CatalogSchemaName schema, String newSchemaName)
     {
-        if (!canAccessSchema(context.getIdentity(), schema.getCatalogName(), schema.getSchemaName(), ALL)
-                || !canAccessSchema(context.getIdentity(), schema.getCatalogName(), newSchemaName, ALL)) {
-            denyRenameSchema(schema.toString(), newSchemaName);
-        }
     }
 
     @Override
     public void checkCanSetSchemaAuthorization(SystemSecurityContext context, CatalogSchemaName schema, TrinoPrincipal principal)
     {
-        if (!canAccessSchema(context.getIdentity(), schema.getCatalogName(), schema.getSchemaName(), ALL)) {
-            denySetSchemaAuthorization(schema.toString(), principal);
-        }
     }
 
     @Override
@@ -292,9 +270,6 @@ public class CustomAccessControl
     @Override
     public void checkCanShowCreateSchema(SystemSecurityContext context, CatalogSchemaName schemaName)
     {
-        if (!canAccessSchema(context.getIdentity(), schemaName.getCatalogName(), schemaName.getSchemaName(), ALL)) {
-            denyShowCreateSchema(schemaName.toString());
-        }
     }
 
     @Override
@@ -365,9 +340,6 @@ public class CustomAccessControl
     @Override
     public void checkCanShowTables(SystemSecurityContext context, CatalogSchemaName schema)
     {
-        if (!canAccessSchema(context.getIdentity(), schema.getCatalogName(), schema.getSchemaName(), READ_ONLY)) {
-            denyShowTables(schema.toString());
-        }
     }
 
     @Override
@@ -575,25 +547,16 @@ public class CustomAccessControl
     @Override
     public void checkCanGrantSchemaPrivilege(SystemSecurityContext context, Privilege privilege, CatalogSchemaName schema, TrinoPrincipal grantee, boolean grantOption)
     {
-        if (!canAccessSchema(context.getIdentity(), schema.getCatalogName(), schema.getSchemaName(), ALL)) {
-            denyGrantSchemaPrivilege(privilege.name(), schema.getSchemaName());
-        }
     }
 
     @Override
     public void checkCanDenySchemaPrivilege(SystemSecurityContext context, Privilege privilege, CatalogSchemaName schema, TrinoPrincipal grantee)
     {
-        if (!canAccessSchema(context.getIdentity(), schema.getCatalogName(), schema.getSchemaName(), ALL)) {
-            denyDenySchemaPrivilege(privilege.name(), schema.getSchemaName());
-        }
     }
 
     @Override
     public void checkCanRevokeSchemaPrivilege(SystemSecurityContext context, Privilege privilege, CatalogSchemaName schema, TrinoPrincipal revokee, boolean grantOption)
     {
-        if (!canAccessSchema(context.getIdentity(), schema.getCatalogName(), schema.getSchemaName(), ALL)) {
-            denyRevokeSchemaPrivilege(privilege.name(), schema.getSchemaName());
-        }
     }
 
     @Override
@@ -705,34 +668,17 @@ public class CustomAccessControl
     private boolean canAccessCatalog(Identity identity, String catalogName, CatalogAccessControlRule.AccessMode accessMode)
     {
         Map<String, Object> body = new HashMap<>();
-        body.put("service", "adac");
-        body.put("resource", "catalog");
-        body.put("action", accessMode);
-        body.put("id", catalogName);
-        body.put("name", catalogName);
-        body.put("path", catalogName);
-        body.put("timestamp", System.currentTimeMillis());
-        body.put("sub", identity.getUser());
-        body.put("dataplant-id", "JWT->DataplantId");
-        body.put("attributes", "{}");
-        body.put("with-conditions", true);
-        return isOpaAllowed(body);
-    }
-
-    private boolean canAccessSchema(Identity identity, String catalogName, String schemaName, CatalogAccessControlRule.AccessMode accessMode)
-    {
-        Map<String, Object> body = new HashMap<>();
-        body.put("service", "adac");
-        body.put("resource", "schema");
-        body.put("action", accessMode);
-        body.put("id", format("%s.%s", catalogName, schemaName));
-        body.put("name", schemaName);
-        body.put("path", catalogName);
-        body.put("timestamp", System.currentTimeMillis());
-        body.put("sub", identity.getUser());
-        body.put("dataplant-id", "JWT->DataplantId");
-        body.put("attributes", "{}");
-        body.put("with-conditions", true);
+        body.put("Service", "adac");
+        body.put("Resource", "dataset");
+        body.put("Action", accessMode);
+        body.put("Id", catalogName);
+        body.put("Name", catalogName);
+        body.put("Path", catalogName);
+        body.put("Timestamp", System.currentTimeMillis());
+        body.put("Sub", identity.getUser());
+        body.put("DataplantId", "JWT->DataplantId");
+        body.put("Attributes", "{}");
+        body.put("WithConditions", true);
         return isOpaAllowed(body);
     }
 
@@ -740,17 +686,17 @@ public class CustomAccessControl
     {
         CatalogAccessControlRule.AccessMode requiredCatalogAccess = requiredPrivilege == SELECT || requiredPrivilege == GRANT_SELECT ? READ_ONLY : ALL;
         Map<String, Object> body = new HashMap<>();
-        body.put("service", "adac");
-        body.put("resource", "table");
-        body.put("action", requiredCatalogAccess);
-        body.put("id", format("%s.%s.%s", table.getCatalogName(), table.getSchemaTableName().getSchemaName(), table.getSchemaTableName().getTableName()));
-        body.put("name", table.getSchemaTableName().getTableName());
-        body.put("path", format("%s.%s", table.getCatalogName(), table.getSchemaTableName().getSchemaName()));
-        body.put("timestamp", System.currentTimeMillis());
-        body.put("sub", identity.getUser());
-        body.put("dataplant-id", "JWT->DataplantId");
-        body.put("attributes", "{}");
-        body.put("with-conditions", true);
+        body.put("Service", "adac");
+        body.put("Resource", "table");
+        body.put("Action", requiredCatalogAccess);
+        body.put("Id", format("%s.%s.%s", table.getCatalogName(), table.getSchemaTableName().getSchemaName(), table.getSchemaTableName().getTableName()));
+        body.put("Name", table.getSchemaTableName().getTableName());
+        body.put("Path", format("%s.%s", table.getCatalogName(), table.getSchemaTableName().getSchemaName()));
+        body.put("Timestamp", System.currentTimeMillis());
+        body.put("Sub", identity.getUser());
+        body.put("DataplantId", "JWT->DataplantId");
+        body.put("Attributes", "{}");
+        body.put("WithConditions", true);
         return isOpaAllowed(body);
     }
 
