@@ -34,9 +34,11 @@ import io.trino.spi.security.ViewExpression;
 import io.trino.spi.type.Type;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -47,6 +49,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.ALL;
 import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.NONE;
 import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.READ_ONLY;
@@ -105,8 +110,10 @@ public class ForepaasAccessControl
 {
     public static final String NAME = "forepaas-access-control";
     private static final ForepaasAccessControl INSTANCE = new ForepaasAccessControl();
-    private static final String OPA_SERVER_URL = "http://localhost:8000/check_access";
+    private static final File CONFIG_FILE = new File("etc/access-control.properties");
+    private static final String URL_PROPERTY = "access-control.url";
     private static final Logger log = Logger.get(ForepaasAccessControl.class);
+    private String opaServerUrl;
 
     public static class Factory
             implements SystemAccessControlFactory
@@ -746,12 +753,16 @@ public class ForepaasAccessControl
     private boolean isOpaAllowed(Map<String, Object> body)
     {
         try {
-            URL url = new URL(OPA_SERVER_URL);
+//            Get url from access-control.properties
+            if (isNullOrEmpty(this.opaServerUrl)) {
+                this.opaServerUrl = getUrlFromProperties();
+            }
+
+            URL url = new URL(this.opaServerUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setDoOutput(true);
-
             // Prepare input for OPA server
             String jsonInput = new ObjectMapper().writeValueAsString(body);
             try (OutputStream os = connection.getOutputStream()) {
@@ -776,5 +787,19 @@ public class ForepaasAccessControl
         catch (IOException e) {
             throw new RuntimeException("Failed to communicate with OPA server", e);
         }
+    }
+
+    private String getUrlFromProperties()
+    {
+        Map<String, String> properties;
+        try {
+            properties = new HashMap<>(loadPropertiesFrom(CONFIG_FILE.getPath()));
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException("Failed to read configuration file: " + CONFIG_FILE, e);
+        }
+        String url = properties.remove(URL_PROPERTY);
+        checkState(!isNullOrEmpty(url), "Access control configuration does not contain '%s' property: %s", URL_PROPERTY, CONFIG_FILE);
+        return url;
     }
 }
