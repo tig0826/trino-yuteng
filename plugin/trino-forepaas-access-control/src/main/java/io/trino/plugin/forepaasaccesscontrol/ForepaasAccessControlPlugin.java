@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.trino.plugin.customaccesscontrol;
+package io.trino.plugin.forepaasaccesscontrol;
 
 import com.google.common.collect.ImmutableList;
 import io.trino.spi.Plugin;
@@ -19,12 +19,12 @@ import io.trino.spi.security.SystemAccessControlFactory;
 
 import java.util.List;
 
-public class CustomAccessControlPlugin
+public class ForepaasAccessControlPlugin
         implements Plugin
 {
     @Override
     public List<SystemAccessControlFactory> getSystemAccessControlFactories()
     {
-        return ImmutableList.of(new CustomAccessControl.Factory());
+        return ImmutableList.of(new ForepaasAccessControl.Factory());
     }
 }

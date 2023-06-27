@@ -9,8 +9,8 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>trino-custom-access-control</artifactId>
-    <description>Trino - Custom Access Control</description>
+    <artifactId>trino-forepaas-access-control</artifactId>
+    <description>Trino - ForePaaS Access Control</description>
     <packaging>trino-plugin</packaging>
 
     <properties>

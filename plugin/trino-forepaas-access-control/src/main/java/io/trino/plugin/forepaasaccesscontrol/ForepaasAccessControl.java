@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.trino.plugin.customaccesscontrol;
+package io.trino.plugin.forepaasaccesscontrol;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -48,6 +48,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.ALL;
+import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.NONE;
 import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.READ_ONLY;
 import static io.trino.plugin.base.security.TableAccessControlRule.TablePrivilege.DELETE;
 import static io.trino.plugin.base.security.TableAccessControlRule.TablePrivilege.GRANT_SELECT;
@@ -99,13 +100,13 @@ import static io.trino.spi.security.AccessDeniedException.denyUpdateTableColumns
 import static io.trino.spi.security.AccessDeniedException.denyWriteSystemInformationAccess;
 import static java.lang.String.format;
 
-public class CustomAccessControl
+public class ForepaasAccessControl
         implements SystemAccessControl
 {
-    public static final String NAME = "custom-access-control";
-    private static final CustomAccessControl INSTANCE = new CustomAccessControl();
+    public static final String NAME = "forepaas-access-control";
+    private static final ForepaasAccessControl INSTANCE = new ForepaasAccessControl();
     private static final String OPA_SERVER_URL = "http://localhost:8000/check_access";
-    private static final Logger log = Logger.get(CustomAccessControl.class);
+    private static final Logger log = Logger.get(ForepaasAccessControl.class);
 
     public static class Factory
             implements SystemAccessControlFactory
@@ -210,7 +211,9 @@ public class CustomAccessControl
     {
         ImmutableSet.Builder<String> filteredCatalogs = ImmutableSet.builder();
         for (String catalog : catalogs) {
-            if (checkCatalogByUserPrefix(context.getIdentity(), catalog)) {
+//            import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.NONE;
+            if (canAccessCatalog(context.getIdentity(), catalog, NONE)) {
+//            if (checkCatalogByUserPrefix(context.getIdentity(), catalog)) {
                 filteredCatalogs.add(catalog);
             }
         }
@@ -667,6 +670,7 @@ public class CustomAccessControl
 
     private boolean canAccessCatalog(Identity identity, String catalogName, CatalogAccessControlRule.AccessMode accessMode)
     {
+        log.info("canAccessCatalog identity" + identity);
         Map<String, Object> body = new HashMap<>();
         body.put("Service", "adac");
         body.put("Resource", "dataset");
@@ -757,7 +761,7 @@ public class CustomAccessControl
 
             // Send POST request to OPA server and parse response to get the access decision
             int responseCode = connection.getResponseCode();
-            log.info("CustomAccessControl.isOpaAllowed: responseCode" + responseCode);
+            log.info("ForepaasAccessControl.isOpaAllowed: responseCode" + responseCode);
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                     String responseJson = reader.readLine();

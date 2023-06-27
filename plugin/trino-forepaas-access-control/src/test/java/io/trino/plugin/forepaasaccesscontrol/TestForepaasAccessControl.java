@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.trino.plugin.customaccesscontrol;
+package io.trino.plugin.forepaasaccesscontrol;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -31,7 +31,7 @@ import static io.trino.transaction.InMemoryTransactionManager.createTestTransact
 import static io.trino.transaction.TransactionBuilder.transaction;
 import static org.testng.Assert.assertEquals;
 
-public class TestCustomAccessControl
+public class TestForepaasAccessControl
 {
     private static final Identity admin = Identity.forUser("alberto").withEnabledRoles(ImmutableSet.of("admin")).build();
     private static final QueryId queryId = new QueryId("query_id");
@@ -69,9 +69,9 @@ public class TestCustomAccessControl
 
     private AccessControlManager newAccessControlManager(TransactionManager transactionManager, String url)
     {
-        AccessControlManager accessControlManager = new AccessControlManager(transactionManager, emptyEventListenerManager(), new AccessControlConfig(), CustomAccessControl.NAME);
-        accessControlManager.addSystemAccessControlFactory(new CustomAccessControl.Factory());
-        accessControlManager.loadSystemAccessControl(CustomAccessControl.NAME, ImmutableMap.of("security.opa-server-url", url));
+        AccessControlManager accessControlManager = new AccessControlManager(transactionManager, emptyEventListenerManager(), new AccessControlConfig(), ForepaasAccessControl.NAME);
+        accessControlManager.addSystemAccessControlFactory(new ForepaasAccessControl.Factory());
+        accessControlManager.loadSystemAccessControl(ForepaasAccessControl.NAME, ImmutableMap.of("security.opa-server-url", url));
 
         return accessControlManager;
     }
