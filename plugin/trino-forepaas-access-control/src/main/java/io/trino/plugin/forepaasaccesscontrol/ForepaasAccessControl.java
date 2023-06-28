@@ -243,6 +243,17 @@ public class ForepaasAccessControl
         return catalogName.split("_")[1].equals(user.split("_")[0]);
     }
 
+    public String getDataplantIdByIdentity(Identity identity) {
+        String user = identity.getUser();
+        if ("admin".equals(user)) {
+            return "admin";
+        }
+        if (!user.contains("_")) {
+            return user;
+        }
+        return user.split("_")[0];
+    }
+
     @Override
     public void checkCanCreateSchema(SystemSecurityContext context, CatalogSchemaName schema, Map<String, Object> properties)
     {
@@ -687,7 +698,7 @@ public class ForepaasAccessControl
         body.put("Path", catalogName);
         body.put("Timestamp", System.currentTimeMillis());
         body.put("Sub", identity.getUser());
-        body.put("DataplantId", "JWT->DataplantId");
+        body.put("DataplantId", getDataplantIdByIdentity(identity));
         body.put("Attributes", "{}");
         body.put("WithConditions", true);
         return isOpaAllowed(body);
@@ -705,7 +716,7 @@ public class ForepaasAccessControl
         body.put("Path", format("%s.%s", table.getCatalogName(), table.getSchemaTableName().getSchemaName()));
         body.put("Timestamp", System.currentTimeMillis());
         body.put("Sub", identity.getUser());
-        body.put("DataplantId", "JWT->DataplantId");
+        body.put("DataplantId", getDataplantIdByIdentity(identity));
         body.put("Attributes", "{}");
         body.put("WithConditions", true);
         return isOpaAllowed(body);
@@ -753,7 +764,7 @@ public class ForepaasAccessControl
     private boolean isOpaAllowed(Map<String, Object> body)
     {
         try {
-//            Get url from access-control.properties
+            // Get url from access-control.properties
             if (isNullOrEmpty(this.opaServerUrl)) {
                 this.opaServerUrl = getUrlFromProperties();
             }
