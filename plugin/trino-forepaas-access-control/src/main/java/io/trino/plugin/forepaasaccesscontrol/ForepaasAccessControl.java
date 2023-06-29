@@ -53,7 +53,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.ALL;
-import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.NONE;
 import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.READ_ONLY;
 import static io.trino.plugin.base.security.TableAccessControlRule.TablePrivilege.DELETE;
 import static io.trino.plugin.base.security.TableAccessControlRule.TablePrivilege.GRANT_SELECT;
@@ -139,39 +138,21 @@ public class ForepaasAccessControl
     @Override
     public void checkCanExecuteQuery(SystemSecurityContext context)
     {
-        //        TODO: Let it go
-//        if (!canAccessQuery(context.getIdentity(), QueryAccessRule.AccessMode.EXECUTE)) {
-//            denyViewQuery();
-//        }
     }
 
     @Override
     public void checkCanViewQueryOwnedBy(SystemSecurityContext context, Identity queryOwner)
     {
-        //        TODO: Let it go
-//        Identity user = context.getIdentity();
-//        if (!user.equals(queryOwner) && !canAccessQuery(queryOwner, QueryAccessRule.AccessMode.VIEW)) {
-//            denyViewQuery();
-//        }
     }
 
     @Override
     public void checkCanKillQueryOwnedBy(SystemSecurityContext context, Identity queryOwner)
     {
-        //        TODO: Let it go
-//        Identity user = context.getIdentity();
-//        if (user.equals(queryOwner) || !canAccessQuery(queryOwner, QueryAccessRule.AccessMode.KILL)) {
-//            denyKillQuery();
-//        }
     }
 
     @Override
     public void checkCanReadSystemInformation(SystemSecurityContext context)
     {
-        //        TODO: Let it go
-//        if (!canSystemInformation(context.getIdentity(), SystemInformationRule.AccessMode.READ)) {
-//            denyReadSystemInformationAccess();
-//        }
     }
 
     @Override
@@ -183,10 +164,6 @@ public class ForepaasAccessControl
     @Override
     public void checkCanSetSystemSessionProperty(SystemSecurityContext context, String propertyName)
     {
-//        TODO: Let it go
-//        if (!canSystemProperty(context.getIdentity(), propertyName)) {
-//            denySetSystemSessionProperty(propertyName);
-//        }
     }
 
     @Override
@@ -219,8 +196,8 @@ public class ForepaasAccessControl
         ImmutableSet.Builder<String> filteredCatalogs = ImmutableSet.builder();
         for (String catalog : catalogs) {
 //            import static io.trino.plugin.base.security.CatalogAccessControlRule.AccessMode.NONE;
-            if (canAccessCatalog(context.getIdentity(), catalog, NONE)) {
-//            if (checkCatalogByUserPrefix(context.getIdentity(), catalog)) {
+//            if (canAccessCatalog(context.getIdentity(), catalog, NONE)) {
+            if (checkCatalogByUserPrefix(context.getIdentity(), catalog)) {
                 filteredCatalogs.add(catalog);
             }
         }
@@ -550,19 +527,16 @@ public class ForepaasAccessControl
     @Override
     public void checkCanGrantExecuteFunctionPrivilege(SystemSecurityContext context, String functionName, TrinoPrincipal grantee, boolean grantOption)
     {
-//        TODO: Can't override
     }
 
     @Override
     public void checkCanGrantExecuteFunctionPrivilege(SystemSecurityContext context, FunctionKind functionKind, CatalogSchemaRoutineName functionName, TrinoPrincipal grantee, boolean grantOption)
     {
-//        TODO: Can't override
     }
 
     @Override
     public void checkCanSetCatalogSessionProperty(SystemSecurityContext context, String catalogName, String propertyName)
     {
-//        TODO: Can't override
     }
 
     @Override
@@ -688,7 +662,6 @@ public class ForepaasAccessControl
 
     private boolean canAccessCatalog(Identity identity, String catalogName, CatalogAccessControlRule.AccessMode accessMode)
     {
-        log.info("canAccessCatalog identity" + identity);
         Map<String, Object> body = new HashMap<>();
         body.put("Service", "adac");
         body.put("Resource", "dataset");
