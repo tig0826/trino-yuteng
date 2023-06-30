@@ -19,9 +19,9 @@ import org.testng.annotations.Test;
 
 import static io.trino.tempto.assertions.QueryAssert.Row.row;
 import static io.trino.tempto.assertions.QueryAssert.assertThat;
+import static io.trino.testing.TestingNames.randomNameSuffix;
 import static io.trino.tests.product.TestGroups.PROFILE_SPECIFIC_TESTS;
 import static io.trino.tests.product.TestGroups.SNOWFLAKE;
-import static io.trino.testing.TestingNames.randomNameSuffix;
 import static io.trino.tests.product.utils.QueryExecutors.onTrino;
 
 public class TestSnowflake

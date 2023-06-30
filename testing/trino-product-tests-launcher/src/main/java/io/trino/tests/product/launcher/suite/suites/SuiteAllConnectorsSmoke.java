@@ -23,16 +23,12 @@ import java.util.List;
 
 import static io.trino.tests.product.launcher.suite.SuiteTestRun.testOnEnvironment;
 
-<<<<<<<< HEAD:testing/trino-product-tests-launcher/src/main/java/io/trino/tests/product/launcher/suite/suites/SuiteAllConnectorsSmoke.java
 /**
  * Suite that verifies that the cluster starts with as many connectors
  * enabled as possible. The catalogs do not have to have valid configuration,
  * so it might not be possible to execute queries using them.
  */
 public class SuiteAllConnectorsSmoke
-========
-public class SuiteSnowflake
->>>>>>>> da8fe892a7 (Add Snowflake JDBC Connector):testing/trino-product-tests-launcher/src/main/java/io/trino/tests/product/launcher/suite/suites/SuiteSnowflake.java
         extends Suite
 {
     @Override
