@@ -220,7 +220,8 @@ public class ForepaasAccessControl
         return catalogName.split("_")[1].equals(user.split("_")[0]);
     }
 
-    public String getDataplantIdByIdentity(Identity identity) {
+    public String getDataplantIdByIdentity(Identity identity)
+    {
         String user = identity.getUser();
         if ("admin".equals(user)) {
             return "admin";
