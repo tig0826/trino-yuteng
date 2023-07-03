@@ -735,7 +735,7 @@ public class ForepaasAccessControl
 //        return isOpaAllowed(body);
 //    }
 
-    private boolean isOpaAllowed(Map<String, Object> body)
+    private boolean isOpaAllowed(Map<String, Object> input)
     {
         try {
             // Get url from access-control.properties
@@ -749,6 +749,9 @@ public class ForepaasAccessControl
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setDoOutput(true);
             // Prepare input for OPA server
+            Map<String, Object> body = new HashMap<>();
+            body.put("query", "allow = data.iam.allow");
+            body.put("input", input);
             String jsonInput = new ObjectMapper().writeValueAsString(body);
             try (OutputStream os = connection.getOutputStream()) {
                 byte[] inputBytes = jsonInput.getBytes(StandardCharsets.UTF_8);
@@ -762,8 +765,19 @@ public class ForepaasAccessControl
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                     String responseJson = reader.readLine();
                     Map<String, Object> response = new ObjectMapper().readValue(responseJson, Map.class);
-                    return Boolean.parseBoolean(response.getOrDefault("result", "false").toString());
+                    Object result = response.get("result");
+                    if (result instanceof List) {
+                        List<Map<String, Object>> resultList = (List<Map<String, Object>>) result;
+                        if (!resultList.isEmpty()) {
+                            Map<String, Object> resultEntry = resultList.get(0);
+                            Object allowValue = resultEntry.get("allow");
+                            if (allowValue instanceof Boolean) {
+                                return (Boolean) allowValue;
+                            }
+                        }
+                    }
                 }
+                return false; // Default case: OPA response does not match expected format
             }
             else {
                 throw new RuntimeException("Failed to communicate with OPA server, HTTP error code: " + responseCode);
